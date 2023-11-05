@@ -1,0 +1,123 @@
+# The GSHG model
+model{
+tau~ dunif(0,kt)
+beta0~ dnorm(0,0.01)
+beta1~ dnorm(0,0.01)
+beta2~ dnorm(0,0.01)
+lambda ~ dlnorm(mu_lambda, tau_lambda)
+mu_lambda <- -0.5/nu
+tau_lambda <- 1/nu
+nu <- 10
+alpha ~ dunif(0,100)
+theta ~ dunif(0,kte)
+sigma1 ~ dunif(0,100)
+
+
+for(i in 1:n)
+{
+T1[i] ~ dnorm (mu_t[i],tau)
+mu_t[i]= sigma1*y[i]+beta0+beta1*xx1[i]+beta2*xx2[i]
+y[i]=arcsinh(0.5*alpha*qnorm(lambda*pnorm(z[i],0,1)/((lambda*pnorm(z[i],0,1))-pnorm(z[i],0,1)+1),0,1))
+ep[i]=T1[i]-mu_t[i]
+}
+
+
+
+for( i in 1:n){
+mu1[i]= 0
+for(j in 1:n){
+sigma[i,j] <- exp(-D[i,j]/theta)
+}
+}
+z[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
+omega.z <- inverse(sigma)
+
+}
+###################################################################################
+# The SHG model
+model{
+tau ~ dunif(0,kt)
+beta0~ dnorm(0,0.01)
+beta1~ dnorm(0,0.01)
+beta2~ dnorm(0,0.01)
+alpha ~ dunif(0,100)
+theta ~ dunif(0,kte)
+sigma1~dunif(0,100)
+
+for(i in 1:n){
+T1[i] ~ dnorm (mu_t[i],tau)
+mu_t[i] = sigma1*y[i]+beta0+beta1*xx1[i]+beta2*xx2[i]
+y[i]=arcsinh(0.5*alpha*z[i])
+ep[i]=T1[i]-mu_t[i]
+}
+
+
+for( i in 1:n){
+mu1[i]= 0
+for(j in 1:n){
+sigma[i,j] <- exp(-D[i,j]/theta)
+}
+}
+z[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
+omega.z <- inverse(sigma)
+
+}
+############################################################################################3
+# The G model
+model{
+tau ~ dunif(0,kt)
+beta0~ dnorm(0,0.01)
+beta1~ dnorm(0,0.01)
+beta2~ dnorm(0,0.01)
+sigma1~dunif(0,100)
+theta ~ dunif(0.01,kte)
+
+for(i in 1:n){
+T1[i] ~ dnorm (mu_t[i],tau)
+mu_t[i] = sigma1* y[i]+beta0+beta1*xx1[i]+beta2*xx2[i]
+ep[i]=T1[i]-mu_t[i]
+}
+
+for( i in 1:n){
+mu1[i]= 0
+for(j in 1:n){
+sigma[i,j] <- exp(-D[i,j]/theta)
+}
+}
+y[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
+omega.z <- inverse(sigma)
+}
+################################################################################################
+# The GNG model
+model{
+tau~dunif(0,kt)
+beta0~ dnorm(0,0.01)
+beta1~ dnorm(0,0.01)
+beta2~ dnorm(0,0.01)
+lambda ~ dlnorm(mu_lambda, tau_lambda)
+mu_lambda <- -0.5/nu
+tau_lambda <- 1/nu
+nu <- 10
+theta ~ dunif(0,kte)
+sigma1 ~ dunif(0,100)
+
+
+for(i in 1:n)
+{
+T1[i] ~ dnorm (mu_t[i],tau)
+mu_t[i]= sigma1*y[i]+beta0+beta1*xx1[i]+beta2*xx2[i]
+y[i]=qnorm(lambda*pnorm(z[i],0,1)/((lambda*pnorm(z[i],0,1))-pnorm(z[i],0,1)+1),0,1)
+ep[i]=T1[i]-mu_t[i]
+}
+
+
+
+for( i in 1:n){
+mu1[i]= 0
+for(j in 1:n){
+sigma[i,j] <- exp(-D[i,j]/theta)
+}
+}
+z[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
+omega.z <- inverse(sigma)
+}
