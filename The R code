@@ -228,3 +228,29 @@ z[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
 omega.z <- inverse(sigma)
 }
 
+##########################################################################################
+# The Zhang & El-Shaarawi model for the illustrative example
+model{
+model{
+tau ~ dunif(0,kt)
+beta0~ dnorm(29.73,0.01)
+sigma1~dunif(0,100)
+theta ~ dunif(0,kte)
+lambda~dnorm(0,0.01)
+
+for(i in 1:n){
+T1[i] ~ dnorm (mu_t[i],tau)
+mu_t[i] = sigma1*( y1[i]+lambda*abs(y2[i]))+beta0
+ep[i]=T1[i]-mu_t[i]
+}
+
+for( i in 1:n){
+mu1[i]= 0
+for(j in 1:n){
+sigma[i,j] <- exp(-D[i,j]/theta)
+}
+}
+y2[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
+y1[1:n] ~ dmnorm(mu1[1:n],omega.z[1:n,1:n])
+omega.z <- inverse(sigma)
+}
