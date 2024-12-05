@@ -1,0 +1,194 @@
+
+
+#==========================================================
+# Define Model 01 (Beta-Gaussian)
+#==========================================================
+
+expcov <- nimbleFunction(
+  run = function(dists = double(2), theta = double(0), sigma2 = double(0)) {
+    returnType(double(2))
+    n <- dim(dists)[1]
+    result <- matrix(nrow = n, ncol = n, init = FALSE)
+    for (i in 1:n) {
+      for (j in 1:n) {
+        result[i, j] <- sigma2 * exp(-dists[i, j] / theta)
+      }
+    }
+    return(result)
+  }
+)
+
+
+Code <- nimbleCode({
+  # Model
+  for(i in 1:n){
+    logit(mu[i]) <- beta0 + u[i]
+    y[i] ~ dbeta(phi*mu[i], phi*(1 - mu[i]))
+  }
+  
+  
+  # Random Field
+  Sigma[1:n, 1:n] <- expcov(dists[1:n, 1:n], theta, sigma2)
+  u[1:n] ~ dmnorm(zero[1:n], cov = Sigma[1:n, 1:n])
+  
+  
+  # Priors
+  beta0 ~ dnorm(0, var = 100)
+  phi ~ dgamma(0.01, 0.01)
+  theta ~ dunif(0.01, max.dist)
+})
+
+
+dists <- as.matrix(dist(cbind(s1, s2)))
+Data <- list(y = new.y)
+Consts <- list(n = length(y), dists = dists, zero = rep(0, length(y)), sigma2 = 1, max.dist = max(dists))
+Inits <- list(beta0 = 0, phi = 1, u = rep(0, Consts$n))
+mcmc.out1 <- nimbleMCMC(code = Code, data = Data, constants = Consts, inits = Inits,
+                        niter = 1000000, nburnin = 300000, thin = 700, nchains = 1,
+                        monitors = c("beta0", "phi", "theta", "mu", "y"),
+                        summary = TRUE, WAIC = TRUE)
+
+
+
+#==========================================================
+# Define Model 02 (Flexible Beta-Gaussian)
+#==========================================================
+
+dFB <- nimbleFunction(
+  run = function(x = double(0), mu = double(0), phi = double(0),
+                 p = double(0), omega = double(0), log = integer(0, default = 0)){
+    returnType(double(0))
+    wtilde <- omega * min(mu/p, (1 - mu)/(1 - p))
+    lambda1 <- mu + (1 - p) * wtilde
+    lambda2 <- mu - p * wtilde
+    logProb <- log(p * dbeta(x, phi*lambda1, phi*(1 - lambda1)) +
+                     (1 - p) * dbeta(x, phi*lambda2, phi*(1 - lambda2)))
+    if(log) return(logProb)
+    else return(exp(logProb))
+  })
+
+
+rFb <- function(n, mu, phi, p, omega){
+  wtilde <- omega * min(mu/p, (1 - mu)/(1 - p))
+  lambda1 <- mu + (1 - p) * wtilde
+  lambda2 <- mu - p * wtilde
+  z <- rbinom(n, size = 1, prob = p)
+  y = c()
+  for (i in 1:n) {
+    if (z[i] == 1) {
+      y[i] <- rbeta(1, phi*lambda1, phi*(1 - lambda1))
+    } else {
+      y[i] <- rbeta(1, phi*lambda2, phi*(1 - lambda2))
+    }
+  }
+  return(y)
+}
+
+rFB <- nimbleRcall(function(n = integer(0), mu = double(0), phi = double(0),
+                            p = double(0), omega = double(0)){},
+                   Rfun = 'rFb', returnType = double(0))
+
+registerDistributions(list(
+  dFB = list(
+    BUGSdist = "dFB(mu, phi, p, omega)",
+    types = c('mu = double(0)', 'phi = double(0)',
+              'p = double(0)', 'omega = double(0)')
+  )
+))
+
+
+
+expcov <- nimbleFunction(
+  run = function(dists = double(2), theta = double(0), sigma2 = double(0)) {
+    returnType(double(2))
+    n <- dim(dists)[1]
+    result <- matrix(nrow = n, ncol = n, init = FALSE)
+    for (i in 1:n) {
+      for (j in 1:n) {
+        result[i, j] <- sigma2 * exp(-dists[i, j] / theta)
+      }
+    }
+    return(result)
+  }
+)
+
+
+Code <- nimbleCode({
+  # Model
+  for(i in 1:n){
+    logit(mu[i]) <- beta0 + u[i]
+    y[i] ~ dFB(mu[i], phi, p, omega)
+  }
+  
+  
+  # Random Field
+  Sigma[1:n, 1:n] <- expcov(dists[1:n, 1:n], theta, sigma2)
+  u[1:n] ~ dmnorm(zero[1:n], cov = Sigma[1:n, 1:n])
+  
+  
+  # Priors
+  beta0 ~ dnorm(0, var = 100)
+  phi ~ dgamma(0.01, 0.01)
+  p ~ dunif(0, 1)
+  omega ~ dunif(0, 1)
+  theta ~ dunif(0.01, max.dist)
+})
+
+
+dists <- as.matrix(dist(cbind(s1, s2)))
+Data <- list(y = new.y)
+Consts <- list(n = length(y), dists = dists, zero = rep(0, length(y)), sigma2 = 1, max.dist = max(dists))
+Inits <- list(beta0 = 0, phi = 1, p = 0.5, omega = 0.5, theta = 0.5, u = rep(0, Consts$n))
+mcmc.out2 <- nimbleMCMC(code = Code, data = Data, constants = Consts, inits = Inits,
+                        niter = 1000000, nburnin = 300000, thin = 700, nchains = 1,
+                        monitors = c("beta0", "phi", "p", "omega", "theta", "mu", "y"),
+                        summary = TRUE, WAIC = TRUE)
+
+
+#==========================================================
+# Define Model 03 (Beta-Bimodal Gaussian)
+#==========================================================
+
+expcov <- nimbleFunction(
+  run = function(dists = double(2), theta = double(0), sigma2 = double(0)) {
+    returnType(double(2))
+    n <- dim(dists)[1]
+    result <- matrix(nrow = n, ncol = n, init = FALSE)
+    for (i in 1:n) {
+      for (j in 1:n) {
+        result[i, j] <- sigma2 * exp(-dists[i, j] / theta)
+      }
+    }
+    return(result)
+  }
+)
+
+
+Code <- nimbleCode({
+  # Model
+  for(i in 1:n){
+    logit(mu[i]) <- beta0 + asinh(0.5*alpha*u[i])
+    y[i] ~ dbeta(phi*mu[i], phi*(1 - mu[i]))
+  }
+  
+  
+  # Random Field
+  Sigma[1:n, 1:n] <- expcov(dists[1:n, 1:n], theta, sigma2)
+  u[1:n] ~ dmnorm(zero[1:n], cov = Sigma[1:n, 1:n])
+  
+  
+  # Priors
+  beta0 ~ dnorm(0, var = 100)
+  phi ~ dgamma(0.01, 0.01)
+  alpha ~ dunif(0, 20)
+  theta ~ dunif(0.01, max.dist)
+})
+
+dists <- as.matrix(dist(cbind(s1, s2)))
+Data <- list(y = new.y)
+Consts <- list(n = length(y), dists = dists, zero = rep(0, length(y)), sigma2 = 1, max.dist = max(dists))
+Inits <- list(beta0 = 0, phi = 1, alpha = 10, u = rep(0, Consts$n))
+mcmc.out3 <- nimbleMCMC(code = Code, data = Data, constants = Consts, inits = Inits,
+                        niter = 1000000, nburnin = 300000, thin = 700, nchains = 1,
+                        monitors = c("beta0", "phi", "alpha", "theta", "mu", "y"),
+                        summary = TRUE, WAIC = TRUE)
