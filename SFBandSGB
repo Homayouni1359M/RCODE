@@ -42,9 +42,9 @@ Code <- nimbleCode({
 dists <- as.matrix(dist(cbind(s1, s2)))
 Data <- list(y = new.y)
 Consts <- list(n = length(y), dists = dists, zero = rep(0, length(y)), sigma2 = 1, max.dist = max(dists))
-Inits <- list(beta0 = 0, phi = 1, u = rep(0, Consts$n))
+Inits <- list(list(beta0 = 0, phi = 1, u = rep(0, Consts$n)),list(beta0 = 0.01, phi = 0.9, u = rep(0.01, Consts$n)))
 mcmc.out1 <- nimbleMCMC(code = Code, data = Data, constants = Consts, inits = Inits,
-                        niter = 1000000, nburnin = 300000, thin = 700, nchains = 1,
+                        niter = 100000, nburnin = 30000, thin = 70, nchains = 2,
                         monitors = c("beta0", "phi", "theta", "mu", "y"),
                         summary = TRUE, WAIC = TRUE)
 
@@ -138,9 +138,9 @@ Code <- nimbleCode({
 dists <- as.matrix(dist(cbind(s1, s2)))
 Data <- list(y = new.y)
 Consts <- list(n = length(y), dists = dists, zero = rep(0, length(y)), sigma2 = 1, max.dist = max(dists))
-Inits <- list(beta0 = 0, phi = 1, p = 0.5, omega = 0.5, theta = 0.5, u = rep(0, Consts$n))
+Inits <- list(list(beta0 = 0, phi = 1, p = 0.5, omega = 0.5, theta = 0.5, u = rep(0, Consts$n)),list(beta0 = 0.01, phi = 0.9, p = 0.51, omega = 0.51, theta = 0.51, u = rep(0.01, Consts$n)))
 mcmc.out2 <- nimbleMCMC(code = Code, data = Data, constants = Consts, inits = Inits,
-                        niter = 1000000, nburnin = 300000, thin = 700, nchains = 1,
+                        niter = 100000, nburnin = 30000, thin = 70, nchains = 2,
                         monitors = c("beta0", "phi", "p", "omega", "theta", "mu", "y"),
                         summary = TRUE, WAIC = TRUE)
 
@@ -187,8 +187,8 @@ Code <- nimbleCode({
 dists <- as.matrix(dist(cbind(s1, s2)))
 Data <- list(y = new.y)
 Consts <- list(n = length(y), dists = dists, zero = rep(0, length(y)), sigma2 = 1, max.dist = max(dists))
-Inits <- list(beta0 = 0, phi = 1, alpha = 10, u = rep(0, Consts$n))
+Inits <- list(list(beta0 = 0, phi = 1, alpha = 10, u = rep(0, Consts$n)),list(beta0 = 0.01, phi = 0.9, alpha = 11, u = rep(0.01, Consts$n)))
 mcmc.out3 <- nimbleMCMC(code = Code, data = Data, constants = Consts, inits = Inits,
-                        niter = 1000000, nburnin = 300000, thin = 700, nchains = 1,
+                        niter = 100000, nburnin = 30000, thin = 70, nchains = 2,
                         monitors = c("beta0", "phi", "alpha", "theta", "mu", "y"),
                         summary = TRUE, WAIC = TRUE)
